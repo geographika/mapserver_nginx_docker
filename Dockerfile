@@ -98,7 +98,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     libfribidi0 \
     libharfbuzz0b \
-    libprotobuf-c1 \
     libsqlite3-0 \
     libpcre2-posix3 \
     zlib1g \
@@ -114,12 +113,15 @@ COPY --from=builder \
     /build/mapserver/share/ogcapi/templates/html-bootstrap/ \
     /usr/local/share/mapserver/ogcapi/templates/html-bootstrap/
 
+
 RUN ldconfig \
     && ldd /usr/local/bin/mapserv \
     && ! ldd /usr/local/bin/mapserv | grep -q "not found"
 
 RUN mkdir -p /maps \
     && chown nginx:nginx /maps
+
+COPY maps/* /maps/.
 
 # MapServer environment
 ENV PROJ_DATA=/usr/share/proj
@@ -165,12 +167,13 @@ cat > /maps/mapserver.conf <<'MAPCONF'
 CONFIG
   ENV
     MS_MAP_NO_PATH "1"
-    OGCAPI_HTML_TEMPLATE_DIRECTORY "/usr/local/share/mapserver/ogcapi/templates/html-bootstrap4/"
+    MS_ONLINERESOURCE "http://localhost:8080/"
+    OGCAPI_HTML_TEMPLATE_DIRECTORY "/usr/local/share/mapserver/ogcapi/templates/html-bootstrap/"
     MS_INDEX_TEMPLATE_DIRECTORY "/usr/local/share/mapserver/ogcapi/templates/html-index-bootstrap/"
   END
 
   MAPS
-    EXAMPLE "/maps/example.map"
+    countries "/maps/countries.map"
   END
 END
 MAPCONF

@@ -1,0 +1,53 @@
+MAP
+  NAME "countries"
+  CONFIG "MS_ERRORFILE" "stderr"
+  DEBUG 5
+  STATUS ON
+  EXTENT -180 -90 180 90
+  SIZE 800 400
+  IMAGETYPE PNG
+  WEB
+    METADATA
+      "ows_title"                   "Countries API"
+      "ows_enable_request"          "*"
+      "ows_srs"                     "EPSG:4326"
+      "ows_onlineresource"          "http://localhost:8080/countries"
+      "oga_onlineresource"          "http://localhost:8080/countries/ogcapi"
+      "oga_enable_request"          "*"
+      "oga_title"                   "Countries"
+      "oga_description"             "Simple countries dataset"
+    END
+  END
+  PROJECTION
+    "init=epsg:4326"
+  END
+
+  LAYER
+    NAME "countries"
+    TYPE POLYGON
+    STATUS ON
+
+    CONNECTIONTYPE OGR
+    CONNECTION "ne_110m_admin_0_countries.geojson"
+
+    PROJECTION
+      "init=epsg:4326"
+    END
+
+    CLASS
+      STYLE
+        COLOR 220 220 220
+        OUTLINECOLOR 100 100 100
+      END
+    END
+
+    METADATA
+      "oga_title" "Countries"
+      "oga_description" "Country boundaries"
+      "oga_feature_collection" "true"
+      "gml_include_items" "all"
+      "gml_featureid" "ADM0_ISO"
+    END
+    TEMPLATE "VOID"
+  END
+END

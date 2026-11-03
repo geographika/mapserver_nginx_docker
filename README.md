@@ -17,5 +17,5 @@ docker run -p 8080:80 ghcr.io/pvgenuchten/mapserver_nginx_docker
 
 ## Test
 
-http://localhost:8080/{alias} -> opens the mapserver homepage, listing all mapfiles
+http://localhost:8080 -> opens the mapserver homepage, listing all mapfiles
 
