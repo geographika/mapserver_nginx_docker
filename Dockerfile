@@ -51,6 +51,7 @@ RUN curl -fSL \
 WORKDIR /build/mapserver/build
 
 RUN cmake .. \
+    -Wno-dev \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr/local \
     -DWITH_FCGI=ON \
@@ -78,11 +79,19 @@ RUN /usr/local/bin/mapserv -v | grep -q "SUPPORTS=FASTCGI"
 FROM nginx:stable-trixie
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PROJ_DATA=/usr/share/proj
+ENV MS_ERRORFILE=stderr
+ENV debug=1
 
-# Runtime dependencies only
 RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends \
+    && apt-get upgrade -y 
+
+RUN apt-get install -y cabextract xfonts-utils fontconfig wget dpkg 
+RUN wget http://ftp.us.debian.org/debian/pool/contrib/m/msttcorefonts/ttf-mscorefonts-installer_3.8.1_all.deb 
+RUN dpkg -i ttf-mscorefonts-installer_3.8.1_all.deb 
+RUN fc-cache -f -v
+
+RUN apt-get install -y --no-install-recommends \
     spawn-fcgi \
     tini \
     libfcgi0ldbl \
@@ -105,8 +114,20 @@ RUN apt-get update \
     libpcre2-posix3 \
     libsqlite3-0 \
     zlib1g \
+    fonts-dejavu-core \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# update font cache 
+RUN fc-cache -fv
+
+# generate the mapserver fontlist
+RUN mkdir -p /etc/mapserver && \
+    find /usr/share/fonts -type f \( -iname "*.ttf" -o -iname "*.otf" \) \
+    | while read font; do \
+        name=$(basename "$font" | sed -E 's/\.(ttf|otf)$//' | tr '[:upper:]' '[:lower:]' | tr ' ' '-'); \
+        echo "$name $font"; \
+    done > /etc/mapserver/fonts.txt
 
 # Copy compiled MapServer
 COPY --from=builder /usr/local/ /usr/local/
@@ -123,9 +144,12 @@ RUN ldconfig \
     && ! ldd /usr/local/bin/mapserv | grep -q "not found"
 
 RUN mkdir -p /maps \
-    && chown nginx:nginx /maps
+    && chown nginx:nginx /maps \
+    && chown nginx:nginx /usr/share/nginx/html
 
 COPY maps/* /maps/.
+COPY html/favicon.ico /usr/share/nginx/html/favicon.ico
+COPY html/robots.txt /usr/share/nginx/html/robots.txt
 
 # MapServer environment
 ENV PROJ_DATA=/usr/share/proj
@@ -139,15 +163,43 @@ RUN <<'EOF'
 cat > /etc/nginx/conf.d/mapserver.conf <<'NGINX'
 server {
     listen 80;
-    server_name _;
-
-    location = /health {
+    server_name mapserver;
+    root /usr/share/nginx/html;
+        
+    # Serve robots.txt directly from /usr/share/nginx/html/robots.txt
+    location = /robots.txt {
+        allow all;
+        log_not_found off;
         access_log off;
-        default_type text/plain;
-        return 200 "OK\n";
+    }
+
+    # Serve favicon.ico directly from /usr/share/nginx/html/favicon.ico
+    location = /favicon.ico {
+        allow all;
+        log_not_found off;
+        access_log off;
     }
 
     location / {
+        # 1. Handle Anonymous CORS Preflight (OPTIONS)
+        if ($request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain; charset=utf-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+
+        # 2. Inject CORS headers for actual requests (GET, POST)
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+        
+        # Optional debug header to verify if cache is hit
+        add_header X-Cache-Status $upstream_cache_status;
+        
         include fastcgi_params;
 
         fastcgi_pass 127.0.0.1:9000;

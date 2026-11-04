@@ -6,11 +6,12 @@ MAP
   EXTENT -180 -90 180 90
   SIZE 800 400
   IMAGETYPE PNG
+  FONTSET "/etc/mapserver/fonts.txt"
   WEB
     METADATA
-      "ows_title"                   "Countries API"
+      "ows_title"                   "Countries"
       "ows_enable_request"          "*"
-      "ows_srs"                     "EPSG:4326"
+      "ows_srs"                     "EPSG:4326 EPSG:3857"
       "ows_onlineresource"          "http://localhost:8080/countries"
       "oga_onlineresource"          "http://localhost:8080/countries/ogcapi"
       "oga_enable_request"          "*"
@@ -28,13 +29,27 @@ MAP
     STATUS ON
 
     CONNECTIONTYPE OGR
-    CONNECTION "ne_110m_admin_0_countries.geojson"
+    CONNECTION "ne_110m_admin.json"
 
     PROJECTION
       "init=epsg:4326"
     END
 
     CLASS
+      LABEL
+        TEXT " [ADMIN] "
+        TYPE TRUETYPE
+        FONT "arial"
+        SIZE 6
+        COLOR 255 255 255
+        POSITION CC
+        STYLE
+          GEOMTRANSFORM "labelpoly"
+          COLOR 200 23 21
+          OUTLINECOLOR 2 2 2
+          WIDTH 1
+        END
+      END
       STYLE
         COLOR 220 220 220
         OUTLINECOLOR 100 100 100
@@ -45,8 +60,9 @@ MAP
       "oga_title" "Countries"
       "oga_description" "Country boundaries"
       "oga_feature_collection" "true"
+      "ows_srs" "EPSG:4326 EPSG:3857"
       "gml_include_items" "all"
-      "gml_featureid" "ADM0_ISO"
+      "gml_featureid" "ABBREV"
     END
     TEMPLATE "VOID"
   END
