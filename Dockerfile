@@ -4,7 +4,7 @@
 # ============================================================
 # Stage 1: Build MapServer
 # ============================================================
-FROM debian:bookworm-slim AS builder
+FROM debian:trixie-slim AS builder
 
 ARG MAPSERVER_VERSION=8.6.6
 
@@ -73,7 +73,7 @@ RUN /usr/local/bin/mapserv -v | grep -q "SUPPORTS=FASTCGI"
 # ============================================================
 # Stage 2: Minimal Nginx + MapServer
 # ============================================================
-FROM nginx:stable-bookworm
+FROM nginx:stable-trixie
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -81,27 +81,31 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     spawn-fcgi \
     tini \
+nginx \
+    spawn-fcgi \
+    tini \
     libfcgi0ldbl \
-    libgdal32 \
+    libgdal36 \
     libproj25 \
     proj-data \
     gdal-data \
-    libgeos-c1v5 \
+    libgeos-c1t64 \
     libxml2 \
-    libcurl4 \
-    libpng16-16 \
-    libjpeg62-turbo \
-    libfreetype6 \
-    libtiff6 \
+    libcurl4t64 \
     libpq5 \
-    libgif7 \
+    libpng16-16t64 \
+    libjpeg62-turbo \
+    libtiff6 \
+    libfreetype6 \
     libcairo2 \
     libfribidi0 \
     libharfbuzz0b \
-    libsqlite3-0 \
+    libgif7 \
     libpcre2-posix3 \
+    libsqlite3-0 \
     zlib1g \
     ca-certificates \
+    && apt-get install -y --only-upgrade libbrotli1 brotli \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy compiled MapServer
