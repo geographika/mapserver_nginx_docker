@@ -10,7 +10,9 @@ ARG MAPSERVER_VERSION=8.6.6
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     ca-certificates \
@@ -78,10 +80,9 @@ FROM nginx:stable-trixie
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Runtime dependencies only
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    spawn-fcgi \
-    tini \
-nginx \
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
     spawn-fcgi \
     tini \
     libfcgi0ldbl \
@@ -105,7 +106,6 @@ nginx \
     libsqlite3-0 \
     zlib1g \
     ca-certificates \
-    && apt-get install -y --only-upgrade libbrotli1 brotli \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy compiled MapServer
