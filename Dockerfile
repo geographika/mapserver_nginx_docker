@@ -61,6 +61,7 @@ RUN cmake .. \
     -DWITH_PROJ=ON \
     -DWITH_GEOS=ON \
     -DWITH_POSTGIS=ON \
+    -DWITH_MYSQL=OFF \
     -DWITH_WMS=ON \
     -DWITH_WFS=ON \
     -DWITH_PROTOBUFC=OFF \
@@ -86,6 +87,7 @@ ENV debug=1
 RUN apt-get update \
     && apt-get upgrade -y 
 
+# install mscorefonts
 RUN apt-get install -y cabextract xfonts-utils fontconfig wget dpkg 
 RUN wget http://ftp.us.debian.org/debian/pool/contrib/m/msttcorefonts/ttf-mscorefonts-installer_3.8.1_all.deb 
 RUN dpkg -i ttf-mscorefonts-installer_3.8.1_all.deb 
@@ -118,9 +120,6 @@ RUN apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# update font cache 
-RUN fc-cache -fv
-
 # generate the mapserver fontlist
 RUN mkdir -p /etc/mapserver && \
     find /usr/share/fonts -type f \( -iname "*.ttf" -o -iname "*.otf" \) \
@@ -137,7 +136,6 @@ COPY --from=builder \
 COPY --from=builder \
     /build/mapserver/share/ogcapi/templates/html-bootstrap/ \
     /usr/local/share/mapserver/ogcapi/templates/html-bootstrap/
-
 
 RUN ldconfig \
     && ldd /usr/local/bin/mapserv \
@@ -163,7 +161,7 @@ RUN <<'EOF'
 cat > /etc/nginx/conf.d/mapserver.conf <<'NGINX'
 server {
     listen 80;
-    server_name mapserver;
+    server_name localhost;
     root /usr/share/nginx/html;
         
     # Serve robots.txt directly from /usr/share/nginx/html/robots.txt

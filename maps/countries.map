@@ -17,6 +17,7 @@ MAP
       "oga_enable_request"          "*"
       "oga_title"                   "Countries"
       "oga_description"             "Simple countries dataset"
+      "wms_rootlayer_name" ""
     END
   END
   PROJECTION
